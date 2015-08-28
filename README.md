@@ -103,7 +103,7 @@ First set your `CRYP_KEY` variable.  It can be any length or even be empty (not 
 
 Go 1.5 is required to build the tools.  Install instructions for go [are here](https://golang.org/doc/install).
 
-	go get -v github.com/jasonmoo/cryp/{enc{,_file,_dir},dec{,_file,_dir}}
+	go get -v github.com/jasonmoo/cryp/...
 
 That's it.
 

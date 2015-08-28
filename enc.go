@@ -26,45 +26,48 @@ import (
 // by setting LogOutput = ioutil.Discard
 var LogOutput io.Writer = os.Stdout
 
-// Encrypt takes data and a key and outputs encrypted data and any possible errors
-// The key can be any length or empty (not recommended).  The data can be any length
-// or empty.  A SHA-512/256 key is generated from the supplied key ensuring the
-// 32 byte AES-256 key length requirement is met.  The data is compressed using
-// gzip prior to encryption.  Raw byte output will need to be hex/base64 encoded
-// before it is printable.
-func Encrypt(data []byte, key []byte) ([]byte, error) {
+// Encrypt takes data and a key and outputs encrypted data, it's HMAC SHA-256 signature
+// and any possible errors. The key can be any length or empty (not recommended).
+// The data can be any length or empty.  Scrypt for the 32 byte AES-256 key derivation.
+// The data is compressed using gzip prior to encryption.  Raw byte output will need
+// to be hex/base64 encoded before it is printable.
+func Encrypt(data []byte, key []byte) ([]byte, string, error) {
 
 	// generate a 32 byte key from the variable length key supplied
 	aes256Key := generate32ByteKey(key)
 
 	block, err := aes.NewCipher(aes256Key)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	buf := &bytes.Buffer{}
 	w, err := gzip.NewWriterLevel(buf, gzip.BestCompression)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if _, err := w.Write(data); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := w.Close(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	ciphertext := make([]byte, aes.BlockSize+buf.Len())
 
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	cfb := cipher.NewCFBEncrypter(block, iv)
 	cfb.XORKeyStream(ciphertext[aes.BlockSize:], buf.Bytes())
 
-	return ciphertext, nil
+	h := hmac.New(sha256.New, key)
+	h.Write(ciphertext)
+	sig := hex.EncodeToString(h.Sum(nil))
+
+	return ciphertext, sig, nil
 
 }
 
@@ -114,18 +117,13 @@ func EncryptFile(path string, key []byte) (string, error) {
 	}
 
 	// encrypt tar archive
-	encrypted_data, err := Encrypt(buf.Bytes(), key)
+	encrypted_data, sig, err := Encrypt(buf.Bytes(), key)
 	if err != nil {
 		return "", err
 	}
 
-	// create file name from hash of encrypted data
-	h := hmac.New(sha256.New, key)
-	h.Write(encrypted_data)
-	new_file_name := hex.EncodeToString(h.Sum(nil))
-
-	// create new file
-	new_file_path := filepath.Join(filepath.Dir(path), new_file_name)
+	// create new file using signature as name
+	new_file_path := filepath.Join(filepath.Dir(path), sig)
 	new_file, err := os.OpenFile(new_file_path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_SYNC, 0400)
 	if err != nil {
 		return "", err

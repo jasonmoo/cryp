@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -21,13 +22,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	output, err := cryp.Encrypt(data, []byte(key))
+	output, sig, err := cryp.Encrypt(data, []byte(key))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	enc := base64.NewEncoder(base64.StdEncoding, os.Stdout)
-	defer enc.Close()
-	enc.Write(output)
+	// prepend sig to encrypted data before base64 encoding
+	buf := make([]byte, 0, len(sig)+len(output))
+	buf = append(buf, sig...)
+	buf = append(buf, output...)
+
+	fmt.Println(base64.StdEncoding.EncodeToString(buf))
 
 }

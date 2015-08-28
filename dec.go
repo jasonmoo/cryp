@@ -19,17 +19,31 @@ import (
 	"time"
 )
 
+const SignatureSize = sha256.Size * 2 // hex encoded SHA-256
+
 var sha256HexRegexp = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 // Decrypt takes data and a key and outputs decrypted data and any possible errors
 // The key can be any length or empty (not recommended).  A SHA-512/256 key is generated
 // from the supplied key ensuring the 32 byte AES-256 key length requirement is met.
 // Once decrypted, the data is decompressed using gzip.
-func Decrypt(data []byte, key []byte) ([]byte, error) {
+func Decrypt(data []byte, sig string, key []byte) ([]byte, error) {
 
 	// should never happen
 	if len(data) < aes.BlockSize {
 		return nil, errors.New("insufficient data to decrypt")
+	}
+
+	sig_mac, err := hex.DecodeString(sig)
+	if err != nil {
+		return nil, err
+	}
+
+	h := hmac.New(sha256.New, key)
+	h.Write(data)
+	data_mac := h.Sum(nil)
+	if !hmac.Equal(sig_mac, data_mac) {
+		return nil, errors.New("signature does not match data")
 	}
 
 	// generate a 32 byte key from the variable length key supplied
@@ -50,12 +64,7 @@ func Decrypt(data []byte, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	data, err = ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return ioutil.ReadAll(r)
 
 }
 
@@ -90,14 +99,8 @@ func DecryptFile(path string, key []byte) (string, error) {
 		return "", err
 	}
 
-	h := hmac.New(sha256.New, key)
-	h.Write(data)
-	data_hash := hex.EncodeToString(h.Sum(nil))
-	if data_hash != filepath.Base(path) {
-		return "", fmt.Errorf("Corruption detected in %s", path)
-	}
-
-	dec_data, err := Decrypt(data, key)
+	sig := filepath.Base(path)
+	dec_data, err := Decrypt(data, sig, key)
 	if err != nil {
 		return "", err
 	}

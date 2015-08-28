@@ -34,12 +34,17 @@ func TestEncDec(t *testing.T) {
 	}
 
 	for _, test := range testset {
-		encdata, err := Encrypt([]byte(test.data), []byte(test.key))
+		encdata, sig, err := Encrypt([]byte(test.data), []byte(test.key))
 		if err != nil {
 			t.Error(err)
 		}
 
-		decdata, err := Decrypt(encdata, []byte(test.key))
+		_, err = Decrypt(encdata, "bad516", []byte(test.key))
+		if err == nil {
+			t.Errorf("Expected bad signature error")
+		}
+
+		decdata, err := Decrypt(encdata, sig, []byte(test.key))
 		if err != nil {
 			t.Error(err)
 		}

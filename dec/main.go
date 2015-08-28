@@ -16,12 +16,20 @@ func main() {
 		log.Fatal("CRYP_KEY not set in environment")
 	}
 
-	data, err := ioutil.ReadAll(base64.NewDecoder(base64.StdEncoding, os.Stdin))
+	input, err := ioutil.ReadAll(base64.NewDecoder(base64.StdEncoding, os.Stdin))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	output, err := cryp.Decrypt(data, []byte(key))
+	if len(input) < cryp.SignatureSize {
+		log.Fatal("data too short to decrypt")
+	}
+
+	// extract sig prefix from input data
+	sig := string(input[:cryp.SignatureSize])
+	input = input[cryp.SignatureSize:]
+
+	output, err := cryp.Decrypt(input, sig, []byte(key))
 	if err != nil {
 		log.Fatal(err)
 	}
