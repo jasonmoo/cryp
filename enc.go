@@ -74,7 +74,7 @@ func Encrypt(data []byte, key []byte) ([]byte, error) {
 
 // EncryptDirFiles takes a directory and a key and searches, recursively,
 // for any files to encrypt.  Each file's file name, size, mode, mod time, and contents
-// are written in tar format and gzipped before passing to Encrypt. A new file is created
+// are written in tar format and passed to Encrypt. A new file is created
 // that is named the SHA-256 checksum of the encrypted output.  This effectively hides
 // the file name and provides a checksum to ensure contents are intact. All directories,
 // symlinks, named pipes, sockets, and devices are left as-is.

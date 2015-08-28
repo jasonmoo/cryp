@@ -63,7 +63,7 @@ func Decrypt(data []byte, key []byte) ([]byte, error) {
 
 // DecryptDirFiles takes a directory and a key, and searches recursively,
 // for any files that are named a SHA-256 checksum to decrypt.  It passes each
-// file to Decrypt and gunzips, and parses the tar payload format. It attempts to restore
+// file to Decrypt and parses the tar payload format. It attempts to restore
 // the file to its original form (name, contents, mode, mod time) and returns any errors that
 // occur.  Any files that do not match the SHA-256 checksum are left as-is.
 func DecryptDirFiles(dir string, key []byte) error {

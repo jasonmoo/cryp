@@ -16,9 +16,9 @@ cryp consists of 4 command line programs:
  * `enc_dir` - Takes a list of directories and recursively encrypts each file found within.
  	* Each file is replaced by an encrypted version of itself. The file name, size, mode,
  	mod time and contents are encrypted as a single payload. The payload is in tar format.
-	The encrypted file is named the sha256 hash of it's contents.
+	The encrypted file is named the SHA-256 hash of it's contents.
  * `dec_dir` - Takes a list of directories and recursively looks for encrypted files and decrypts them.
- 	* Each file that has a sha256 hash as the file name is attempted to be decrypted. When contents
+ 	* Each file that has a SHA-256 hash as the file name is attempted to be decrypted. When contents
  	of the file do not match the hash the process is aborted.
 
 cryp is also presented as a library for developing your own tools with.
@@ -103,20 +103,20 @@ That's it.
 
 ##The details of the encryption processes
 
-Encryption uses AES256 CFB encryption with a few extra steps.  The code is clear and readable
+Encryption uses AES-256 CFB encryption with a few extra steps.  The code is clear and readable
 and should reflect the following outline:
 
 *Encryption*
 
-1.  Create AES256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
+1.  Create AES-256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
 3.  Gzip generated key + data into single payload. (This ensures small data, or no data, is
 present as an encrypted payload)
-4.  Encrypt payload using AES256 CFB with generated key
+4.  Encrypt payload using AES-256 CFB with generated key
 
 *Decryption*
 
-1.  Create AES256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
-4.  Decrypt payload using AES256 CFB with generated key
+1.  Create AES-256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
+4.  Decrypt payload using AES-256 CFB with generated key
 3.  Gunzip payload and trim off generated key prefix
 
 ## License
