@@ -2,6 +2,7 @@ package cryp
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -200,7 +201,7 @@ func TestEncDecDirectory(t *testing.T) {
 			return err
 		}
 
-		h := sha256.New()
+		h := hmac.New(sha256.New, key)
 		h.Write(data)
 		data_hash := hex.EncodeToString(h.Sum(nil))
 

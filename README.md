@@ -17,14 +17,14 @@ cryp consists of 6 command line programs:
  * `dec` - Reads base64 encoded data from `STDIN` and outputs decrypted data to `STDOUT`
  * `enc_file` - Takes a list of file paths and creates a new, encrypted, version with the
                 file name, size, mode, mod time and contents written in tar forma and
-                encrypted as a single payload. The encrypted file is named the SHA-256 hash
+                encrypted as a single payload. The encrypted file is named the HMAC SHA-256 hash
                 of it's contents.
  * `dec_file` - Takes a list of file paths and decrypts them, parsing the tar format and creating
                 a file with the original properties of the encrypted version.
  * `enc_dir` - Takes a list of directories and recursively replaces each file with an encrypted
                version using enc_file.
  * `dec_dir` - Takes a list of directories and recursively decrypts each file having a file
-               name that is the SHA-256 checksum of it's contents using dec_file.
+               name that is the HMAC SHA-256 checksum of it's contents using dec_file.
 
 cryp is also presented as a library for developing your own tools with.
 Please visit [godocs](https://godoc.org/github.com/jasonmoo/cryp) for complete documentation.

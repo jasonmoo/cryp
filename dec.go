@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
@@ -91,7 +92,7 @@ func DecryptFile(path string, key []byte) (string, error) {
 		return "", err
 	}
 
-	h := sha256.New()
+	h := hmac.New(sha256.New, key)
 	h.Write(data)
 	data_hash := hex.EncodeToString(h.Sum(nil))
 	if data_hash != filepath.Base(path) {

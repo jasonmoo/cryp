@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -118,7 +119,7 @@ func EncryptFile(path string, key []byte) (string, error) {
 	}
 
 	// create file name from hash of encrypted data
-	h := sha256.New()
+	h := hmac.New(sha256.New, key)
 	h.Write(encrypted_data)
 	new_file_name := hex.EncodeToString(h.Sum(nil))
 
