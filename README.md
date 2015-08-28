@@ -7,7 +7,8 @@ cryp is a small set of encryption/decryption tools to make it easy to encrypt fi
 The goal of this project is to provide a simple way to store secrets in code repositories and
 work with sensitive data.
 
-cryp is written using only the [go stdlib](http://golang.org/pkg/). The code is approachable and tested.
+cryp is written using only the [go stdlib](http://golang.org/pkg/) and the
+[official golang scrypt package](golang.org/x/crypto/scrypt). The code is approachable and tested.
 
 ##How does it work?
 
@@ -113,13 +114,13 @@ and should reflect the following outline:
 
 *Encryption*
 
-1.  Create AES-256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
+1.  Create AES-256 key to encrypt with by taking scrypt hash of the `CRYP_KEY`.
 2.  Gzip data
 3.  Encrypt payload using AES-256 CFB with generated key
 
 *Decryption*
 
-1.  Create AES-256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
+1.  Create AES-256 key to encrypt with by taking scrypt hash of the `CRYP_KEY`.
 2.  Decrypt payload using AES-256 CFB with generated key
 3.  Gunzip data
 

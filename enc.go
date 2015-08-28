@@ -18,6 +18,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"golang.org/x/crypto/scrypt"
 )
 
 // Common actions are printed to stdout.  These can be silenced
@@ -33,10 +35,9 @@ var LogOutput io.Writer = os.Stdout
 func Encrypt(data []byte, key []byte) ([]byte, error) {
 
 	// generate a 32 byte key from the variable length key supplied
-	// Sum512_256 == 32 byte key == aes256
-	aes256Key := sha512.Sum512_256(key)
+	aes256Key := generate32ByteKey(key)
 
-	block, err := aes.NewCipher(aes256Key[:])
+	block, err := aes.NewCipher(aes256Key)
 	if err != nil {
 		return nil, err
 	}
@@ -169,5 +170,24 @@ func EncryptDirFiles(dir string, key []byte) error {
 		return nil
 
 	})
+
+}
+
+func generate32ByteKey(input []byte) []byte {
+
+	// The recommended parameters for interactive logins as of 2009 are N=16384, r=8, p=1.
+	const (
+		// N is a CPU/memory cost parameter, which must be a power of two greater than 1.
+		N = 16 << 10
+		// r and p must satisfy r * p < 2³⁰
+		r = 8
+		p = 1
+		// AES-256 requires 32 byte key
+		keyLen = 32
+	)
+
+	salt := sha512.Sum512(input)
+	key, _ := scrypt.Key(input, salt[:], N, r, p, keyLen)
+	return key
 
 }

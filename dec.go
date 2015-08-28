@@ -8,7 +8,6 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
-	"crypto/sha512"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -34,10 +33,9 @@ func Decrypt(data []byte, key []byte) ([]byte, error) {
 	}
 
 	// generate a 32 byte key from the variable length key supplied
-	// Sum512_256 == 32 byte key == aes256
-	aes256Key := sha512.Sum512_256(key)
+	aes256Key := generate32ByteKey(key)
 
-	block, err := aes.NewCipher(aes256Key[:])
+	block, err := aes.NewCipher(aes256Key)
 	if err != nil {
 		return nil, err
 	}
