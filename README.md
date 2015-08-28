@@ -9,17 +9,20 @@ cryp is written using only the [go stdlib](http://golang.org/pkg/). The code is 
 
 ##How does it work?
 
-cryp consists of 4 command line programs:
+cryp consists of 6 command line programs:
 
  * `enc` - Reads from `STDIN` and outputs base64 encoded data to `STDOUT`
  * `dec` - Reads base64 encoded data from `STDIN` and outputs decrypted data to `STDOUT`
- * `enc_dir` - Takes a list of directories and recursively encrypts each file found within.
- 	* Each file is replaced by an encrypted version of itself. The file name, size, mode,
- 	mod time and contents are encrypted as a single payload. The payload is in tar format.
-	The encrypted file is named the SHA-256 hash of it's contents.
- * `dec_dir` - Takes a list of directories and recursively looks for encrypted files and decrypts them.
- 	* Each file that has a SHA-256 hash as the file name is attempted to be decrypted. When contents
- 	of the file do not match the hash the process is aborted.
+ * `enc_file` - Takes a list of file paths and creates a new, encrypted, version with the
+                file name, size, mode, mod time and contents written in tar forma and
+                encrypted as a single payload. The encrypted file is named the SHA-256 hash
+                of it's contents.
+ * `dec_file` - Takes a list of file paths and decrypts them, parsing the tar format and creating
+                a file with the original properties of the encrypted version.
+ * `enc_dir` - Takes a list of directories and recursively replaces each file with an encrypted
+               version using enc_file.
+ * `dec_dir` - Takes a list of directories and recursively decrypts each file having a file
+               name that is the SHA-256 checksum of it's contents using dec_file.
 
 cryp is also presented as a library for developing your own tools with.
 Please visit [godocs](https://godoc.org/github.com/jasonmoo/cryp) for complete documentation.
@@ -97,7 +100,7 @@ First set your `CRYP_KEY` variable.  It can be any length or even be empty (not 
 
 Go 1.5 is required to build the tools.  Install instructions for go [are here](https://golang.org/doc/install).
 
-	go get -v github.com/jasonmoo/cryp/{enc,dec,enc_dir,dec_dir}
+	go get -v github.com/jasonmoo/cryp/{enc{,_file,_dir},dec{,_file,_dir}}
 
 That's it.
 

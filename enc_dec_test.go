@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -49,6 +50,95 @@ func TestEncDec(t *testing.T) {
 
 }
 
+func TestEncDecFile(t *testing.T) {
+
+	var key = []byte("key")
+
+	testset := []struct {
+		name string
+		data []byte
+		mode os.FileMode
+	}{
+		{
+			name: "empty_file.txt",
+			data: nil,
+			mode: 0644,
+		},
+		{
+			name: "regular file.txt",
+			data: []byte("text data"),
+			mode: 0644,
+		},
+		{
+			name: "binary",
+			data: bytes.Repeat([]byte{0xff, 0xaa, 0x00}, 64<<10),
+			mode: 0755,
+		},
+		{
+			name: "read_only.🔒",
+			data: bytes.Repeat([]byte(" 🔒 "), 1<<10),
+			mode: 0400,
+		},
+	}
+
+	for _, test := range testset {
+		func() {
+			file, err := ioutil.TempFile(os.TempDir(), test.name)
+			if err != nil {
+				t.Error(err)
+			}
+			if _, err := file.Write(test.data); err != nil {
+				t.Error(err)
+			}
+			if err := file.Close(); err != nil {
+				t.Error(err)
+			}
+			if err := os.Chmod(file.Name(), test.mode); err != nil {
+				t.Error(err)
+			}
+
+			new_path, err := EncryptFile(file.Name(), key)
+			if err != nil {
+				t.Error(err)
+			}
+			defer os.Remove(new_path)
+
+			// check if it exists
+			if _, err := os.Stat(new_path); err != nil {
+				t.Error(err)
+			}
+
+			// remove temp file so we can restore it
+			os.Remove(file.Name())
+
+			orig_path, err := DecryptFile(new_path, key)
+			if err != nil {
+				t.Error(err)
+			}
+			defer os.Remove(orig_path)
+
+			if file.Name() != orig_path {
+				t.Errorf("Expected %q, got %q", file.Name(), orig_path)
+			}
+			info, err := os.Stat(orig_path)
+			if err != nil {
+				t.Error(err)
+			}
+			if info.Mode().Perm() != test.mode {
+				t.Errorf("Expected %#o, got %#o", test.mode, info.Mode().Perm())
+			}
+			data, err := ioutil.ReadFile(orig_path)
+			if err != nil {
+				t.Error(err)
+			}
+			if !bytes.Equal(data, test.data) {
+				t.Errorf("File contents mismatch")
+			}
+		}()
+	}
+
+}
+
 func TestEncDecDirectory(t *testing.T) {
 
 	const testSubDir = "test_enc_dec_directory"
@@ -57,7 +147,6 @@ func TestEncDecDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// generate a test dir setup
 	encryptTheseDir := filepath.Join(dir, "encrypt/these")
 	if err := os.MkdirAll(encryptTheseDir, 0777); err != nil {
 		t.Fatal(err)
@@ -71,31 +160,13 @@ func TestEncDecDirectory(t *testing.T) {
 	const TextFile = "normal.txt"
 	var TextFileData = bytes.Repeat([]byte("lines of data\n"), 500)
 	var TextFileMode os.FileMode = 0644
-	if err := ioutil.WriteFile(filepath.Join(encryptTheseDir, TextFile), []byte(TextFileData), TextFileMode); err != nil {
-		t.Fatal(err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(dontEncryptTheseDir, TextFile), []byte(TextFileData), TextFileMode); err != nil {
-		t.Fatal(err)
-	}
-
-	const BinaryFile = "binary"
-	var BinaryFileData = bytes.Repeat([]byte{0xff, 0xaa, 0x00}, 1<<10)
-	var BinaryFileMode os.FileMode = 0755
-	if err := ioutil.WriteFile(filepath.Join(encryptTheseDir, BinaryFile), []byte(BinaryFileData), BinaryFileMode); err != nil {
-		t.Fatal(err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(dontEncryptTheseDir, BinaryFile), []byte(BinaryFileData), BinaryFileMode); err != nil {
-		t.Fatal(err)
-	}
-
-	const ReadOnlyFile = "read_only.🔒"
-	var ReadOnlyFileData = bytes.Repeat([]byte(" 🔒 "), 1<<10)
-	var ReadOnlyFileMode os.FileMode = 0400
-	if err := ioutil.WriteFile(filepath.Join(encryptTheseDir, ReadOnlyFile), []byte(ReadOnlyFileData), ReadOnlyFileMode); err != nil {
-		t.Fatal(err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(dontEncryptTheseDir, ReadOnlyFile), []byte(ReadOnlyFileData), ReadOnlyFileMode); err != nil {
-		t.Fatal(err)
+	for i := 0; i < 10; i++ {
+		if err := ioutil.WriteFile(filepath.Join(encryptTheseDir, TextFile+strconv.Itoa(i)), []byte(TextFileData), TextFileMode); err != nil {
+			t.Fatal(err)
+		}
+		if err := ioutil.WriteFile(filepath.Join(dontEncryptTheseDir, TextFile+strconv.Itoa(i)), []byte(TextFileData), TextFileMode); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	var key = []byte("key")
@@ -162,57 +233,22 @@ func TestEncDecDirectory(t *testing.T) {
 
 		atLeastOneFileChecked = true
 
-		switch filepath.Base(path) {
-		case TextFile:
-			stat, err := os.Stat(path)
-			if err != nil {
-				return err
-			}
-			if stat.Mode().Perm() != TextFileMode {
-				return fmt.Errorf("Expected decrypted file mode %#o, got %#o", TextFileMode, stat.Mode().Perm())
-			}
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(data, TextFileData) {
-				return fmt.Errorf("File data mismatch for %q", path)
-			}
-
-		case BinaryFile:
-			stat, err := os.Stat(path)
-			if err != nil {
-				return err
-			}
-			if stat.Mode().Perm() != BinaryFileMode {
-				return fmt.Errorf("Expected decrypted file mode %#o, got %#o", BinaryFileMode, stat.Mode().Perm())
-			}
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(data, BinaryFileData) {
-				return fmt.Errorf("File data mismatch for %q", path)
-			}
-
-		case ReadOnlyFile:
-			stat, err := os.Stat(path)
-			if err != nil {
-				return err
-			}
-			if stat.Mode().Perm() != ReadOnlyFileMode {
-				return fmt.Errorf("Expected decrypted file mode %#o, got %#o", ReadOnlyFileMode, stat.Mode().Perm())
-			}
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(data, ReadOnlyFileData) {
-				return fmt.Errorf("File data mismatch for %q", path)
-			}
-
-		default:
+		if !strings.HasPrefix(filepath.Base(path), TextFile) {
 			return fmt.Errorf("Found unexpected file: %q", path)
+		}
+		stat, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if stat.Mode().Perm() != TextFileMode {
+			return fmt.Errorf("Expected decrypted file mode %#o, got %#o", TextFileMode, stat.Mode().Perm())
+		}
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(data, TextFileData) {
+			return fmt.Errorf("File data mismatch for %q", path)
 		}
 
 		return nil
