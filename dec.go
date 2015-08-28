@@ -56,8 +56,7 @@ func Decrypt(data []byte, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// trim off key that was prepended during encryption
-	return data[len(aes256Key):], nil
+	return data, nil
 
 }
 

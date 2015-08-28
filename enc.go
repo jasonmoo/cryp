@@ -45,13 +45,6 @@ func Encrypt(data []byte, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// we always encrypt the key with the data
-	// to ensure that enough data is encrypted.
-	// this allows encrypting empty or small strings safely.
-	// it is trimmed from the output in decrypt
-	if _, err := w.Write(aes256Key[:]); err != nil {
-		return nil, err
-	}
 	if _, err := w.Write(data); err != nil {
 		return nil, err
 	}

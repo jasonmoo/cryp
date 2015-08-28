@@ -1,5 +1,7 @@
 #cryp
 
+** this repo is undergoing active development.  use at your own risk **
+
 cryp is a small set of encryption/decryption tools to make it easy to encrypt files and command line data.
 
 The goal of this project is to provide a simple way to store secrets in code repositories and
@@ -112,15 +114,14 @@ and should reflect the following outline:
 *Encryption*
 
 1.  Create AES-256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
-3.  Gzip generated key + data into single payload. (This ensures small data, or no data, is
-present as an encrypted payload)
-4.  Encrypt payload using AES-256 CFB with generated key
+2.  Gzip data
+3.  Encrypt payload using AES-256 CFB with generated key
 
 *Decryption*
 
 1.  Create AES-256 key to encrypt with by taking SHA-512/256 checksum of the `CRYP_KEY`.
-4.  Decrypt payload using AES-256 CFB with generated key
-3.  Gunzip payload and trim off generated key prefix
+2.  Decrypt payload using AES-256 CFB with generated key
+3.  Gunzip data
 
 ## License
 
